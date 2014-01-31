@@ -51,7 +51,7 @@ main()
      * symbol -- a NULL pointer -- to indicate the end of the arguments.
      * In general, execl accepts an arbitrary number of arguments.
      */
-    execl("/bin/ls", "ls", "-lC", (char *)NULL); 
+    execl("/bin/ls", "ls", "-l", (char *)NULL); 
 
     /* If hexdump wasn't executed then we would still have the following
      * function, which would indicate an error 
@@ -80,7 +80,7 @@ main()
    * The child should be 'hexdump', which will process this
    * data.
    */ 
-  write(in[1], data, strlen(data)); 
+  //write(in[1], data, strlen(data)); 
  
   /* Because of the small amount of data, the child may block unless we 
    * close its input stream. This sends an EOF to the child on it's 

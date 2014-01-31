@@ -137,7 +137,7 @@ int main(void)
          }
 
          int waiting = 1;
-         int numbytes, pid, in[2], out[2];
+         int numbytes, pid, in[2], out[2], num;
          char ch_buf[MAXBUFFERSIZE];
 
          if(pipe(in) < 0) error ("pipe in");
@@ -175,9 +175,9 @@ int main(void)
                   close(out[1]);
                   close(in[1]);
 
-                  int read_data = (out[0], ch_buf, MAXBUFFERSIZE);
-                  ch_buf[read_data] = 0;
-                  printf("Data from Child:\n %s", ch_buf);
+                  num = (out[0], ch_buf, MAXDATASIZE);
+                  ch_buf[num] = 0;
+                  printf("Data from Child: %s \n", ch_buf);
 
                   if(send(new_fd, ch_buf, 100, FLAGS) == ERROR){
                      perror("send");
