@@ -15,7 +15,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define PORT "3511"  // the port users will be connecting to
+#define PORT "3611"  // the port users will be connecting to
 #define MAXDATASIZE 100
 #define BACKLOG 10	 // how many pending connections queue will hold
 #define MAXBUFFERSIZE 1024
@@ -45,6 +45,8 @@ void *get_in_addr(struct sockaddr *sa)
 }
 
 void exec_commands(char *data_received);
+void exec_list(int *pid);
+
 void error(char *s);
 
 int main(void)
@@ -127,36 +129,20 @@ int main(void)
 		printf("Server: Got connection from %s\n", s);
 
       char buf[MAXDATASIZE];
-	   
    	
       if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
-			if (send(new_fd, "Connection established!", 23, 0) == -1)
+			if (send(new_fd, "Connection established!", 23, 0) == -1){
 				perror("send");
-       
-         int in[2], out[2], pid; //Two pipes in and out
-         
-         if(pipe(in)<0){
-            error("Pipe in");
          }
-         if(pipe(out)<0){
-            error("Pipe out");
-         }
-         
-          //Close stdin, stdout, stderr
-         close(0);
-         close(1);
-         close(2);
 
-         dup2(in[0],0);
-         dup2(out[1],1);
-         dup2(out[1],2);
-               
-         close(in[1]);
-         close(out[0]);
-         	
          int waiting = 1;
-         int numbytes;
+         int numbytes, pid, in[2], out[2];
+         char ch_buf[MAXBUFFERSIZE];
+
+         if(pipe(in) < 0) error ("pipe in");
+         if(pipe(out) <0) error ("pipe out");
+
          while(waiting){
            numbytes = recv(new_fd, buf, MAXDATASIZE-1, FLAGS);
            if(numbytes == ERROR){
@@ -168,13 +154,46 @@ int main(void)
            } else {
               buf[numbytes] = '\0';
               printf("Data received: '%s'\n", buf);
-              exec_commands(buf);
+              
+              if(strcmp(buf, list_command) == 0){
+                  if(pid=fork() == 0){
+                     close(0); //stdin
+                     close(1); //stdout
+                     close(2); //stderr
+
+                     dup2(in[0],0);
+                     dup2(out[1],1);
+                     dup2(out[1],2);
+
+                     close(in[1]);
+                     close(out[0]);
+
+                     execl("/bin/ls","ls,", "-l", (char *)NULL);
+                     error("List could not be performed!");
+                  }
+                  close(in[0]);
+                  close(out[1]);
+                  close(in[1]);
+
+                  int read_data = (out[0], ch_buf, MAXBUFFERSIZE);
+                  ch_buf[read_data] = 0;
+                  printf("Data from Child:\n %s", ch_buf);
+
+                  if(send(new_fd, ch_buf, 100, FLAGS) == ERROR){
+                     perror("send");
+
+                  exit(0);
+                  }
+              }
+
            }
+         
          }
          close(new_fd);
 			exit(0);
-		} else {
-      }
+         
+         } else {
+         }
 		close(new_fd);  // parent doesn't need this
 	}
 
@@ -184,8 +203,13 @@ int main(void)
 void exec_commands(char *data_received)
 {
    if(strcmp(data_received, list_command) == 0){
-      exec("");
+    
    }
+}
+
+void exec_list(int *pid)
+{
+
 }
 
 void error(char *s)

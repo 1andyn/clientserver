@@ -51,7 +51,7 @@ main()
      * symbol -- a NULL pointer -- to indicate the end of the arguments.
      * In general, execl accepts an arbitrary number of arguments.
      */
-    execl("/usr/bin/hexdump", "hexdump", "-C", (char *)NULL); 
+    execl("/bin/ls", "ls", "-lC", (char *)NULL); 
 
     /* If hexdump wasn't executed then we would still have the following
      * function, which would indicate an error 
@@ -60,7 +60,7 @@ main()
   } 
 
   /*  The following is in the parent process */ 
-  printf("Spawned 'hexdump -C' as a child process at pid %d\n", pid); 
+ // printf("Spawned 'hexdump -C' as a child process at pid %d\n", pid); 
  
   /* This is the parent process */ 
   /* Close the pipe ends that the child uses to read from / write to so 

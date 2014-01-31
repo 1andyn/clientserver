@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define PORT "3511" // the port client will be connecting to 
+#define PORT "3611" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 
@@ -116,8 +116,21 @@ int main(int argc, char *argv[])
       scanf("%s", &command);
       if(strcmp(list_command,command) == 0) {
          while(getchar() != '\n');
-         printf("You have entred the list command!\n");
+         printf("You have entered the list command!\n");
          exec_list(sockfd);
+         int list_not_rec = 1;
+         while(list_not_rec){
+            int r_state = recv(sockfd,buf,MAXDATASIZE-1,0) == -1;
+            if(r_state == ERROR){
+               perror("recv");
+               exit(1);
+            } else if (r_state == 0){
+               printf("Connection lost\n");
+               list_not_rec = 0;
+            } else {
+               list_not_rec = 0;
+            }
+         }
       } else if(strcmp(help_command, command) == 0) {
          while(getchar() != '\n');
          print_commands();
