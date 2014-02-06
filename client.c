@@ -46,6 +46,8 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+
+
 int main(int argc, char *argv[])
 {
 	int sockfd, numbytes;  
@@ -110,24 +112,27 @@ int main(int argc, char *argv[])
    char command[] = "";
    char sec_command[] = "";
    
-
    while(not_quit){
       printf("Enter a command, enter 'help' for a list of commands: ");
       scanf("%s", &command);
       if(strcmp(list_command,command) == 0) {
          while(getchar() != '\n');
          printf("You have entered the list command!\n");
-         exec_list(sockfd);
+         exec_list(sockfd); //Sends a list request to Server
+         
          int list_not_rec = 1;
+         int databytes;
          while(list_not_rec){
-            int r_state = recv(sockfd,buf,MAXDATASIZE-1,0) == -1;
-            if(r_state == ERROR){
+            databytes = recv(sockfd, buf, MAXDATASIZE-1, 0);
+            if(databytes == ERROR){
                perror("recv");
-               exit(1);
-            } else if (r_state == 0){
+               list_not_rec = 0;
+            } else if (databytes == 0){
                printf("Connection lost\n");
                list_not_rec = 0;
             } else {
+               buf[databytes] = '\0';
+               printf("%s \n", buf);
                list_not_rec = 0;
             }
          }

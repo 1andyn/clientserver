@@ -46,7 +46,7 @@ void *get_in_addr(struct sockaddr *sa)
 
 void exec_commands(char *data_received);
 void exec_list(int *pid);
-
+void run_list_pipe(int pip[]);
 void error(char *s);
 
 int main(void)
@@ -135,13 +135,11 @@ int main(void)
 			if (send(new_fd, "Connection established!", 23, 0) == -1){
 				perror("send");
          }
-
+         
+         /* Variables for Pipes */
          int waiting = 1;
-         int numbytes, pid, in[2], out[2], num;
+         int numbytes;
          char ch_buf[MAXBUFFERSIZE];
-
-         if(pipe(in) < 0) error ("pipe in");
-         if(pipe(out) <0) error ("pipe out");
 
          while(waiting){
            numbytes = recv(new_fd, buf, MAXDATASIZE-1, FLAGS);
@@ -156,49 +154,79 @@ int main(void)
               printf("Data received: '%s'\n", buf);
               
               if(strcmp(buf, list_command) == 0){
-                  if(pid=fork() == 0){
-                     close(0); //stdin
-                     close(1); //stdout
-                     close(2); //stderr
+                  
+                  int pid, status;
+                  int pipe[2];
+                  
+                  switch(pid = fork()){   
+                  case 0:
+                     printf("Attempting to run pipe..\n");
+                     run_list_pipe(pipe);
+                     exit(0);
+                  default:
+                     while((pid = wait(&status)) != -1)
+                           printf("Some output here...\n");
+                     break;
+                  case -1:
+                     perror("fork");
+                     exit(1);
+                  }
+               
+                                 
 
-                     dup2(in[0],0);
-                     dup2(out[1],1);
-                     dup2(out[1],2);
+                  
 
-                     close(in[1]);
-                     close(out[0]);
-
+                 /*
+                  if(pid == 0){
+                     close(pipe[0]); //only needs to write
                      execl("/bin/ls","ls,", "-l", (char *)NULL);
                      error("List could not be performed!");
-                  }
-                  close(in[0]);
-                  close(out[1]);
-                  close(in[1]);
+                  } else {
+                     close(pipe[1]); 
+                     num = (pipe[0], ch_buf, MAXDATASIZE);
+                     ch_buf[num] = 0;
+                     printf("Data from Child: %s \n", ch_buf);
 
-                  num = (out[0], ch_buf, MAXDATASIZE);
-                  ch_buf[num] = 0;
-                  printf("Data from Child: %s \n", ch_buf);
-
-                  if(send(new_fd, ch_buf, 100, FLAGS) == ERROR){
-                     perror("send");
-
-                  exit(0);
-                  }
-              }
-
-           }
+                     if(send(new_fd, ch_buf, 100, FLAGS) == ERROR){
+                        perror("send");
+                     }
+                 }*/
+               }
          
          }
-         close(new_fd);
-			exit(0);
-         
-         } else {
+            printf("Transaction Complete..closing socket..\n");
+            close(new_fd);
+			   exit(0);
          }
+      }
 		close(new_fd);  // parent doesn't need this
 	}
 
 	return 0;
 }
+
+char *listcmd[] = {"/bin/ls", "-l", 0};
+
+void run_list_pipe(int pip[])
+{  
+   printf("Running pipe...\n");
+   int pid;
+   switch(pid = fork()){
+   case 0: // Child
+      dup2(pip[0], 0);
+      close(pip[1]); // Closes end of pipe
+      execvp(listcmd[0], listcmd);
+      perror(listcmd[0]);
+   default: // Parent
+      dup2(pip[1], 1);
+      close(pip[0]);
+   case -1:
+      perror("fork");
+      exit(1);
+   }
+}
+
+
 
 void exec_commands(char *data_received)
 {
