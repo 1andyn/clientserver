@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
             } else {
                buf[databytes] = '\0';
                printf("%s \n", buf);
-               list_not_rec = 0;
+               list_not_rec = 1;
             }
          }
       } else if(strcmp(help_command, command) == 0) {
