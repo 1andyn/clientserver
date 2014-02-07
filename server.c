@@ -47,6 +47,9 @@ void *get_in_addr(struct sockaddr *sa)
 void exec_commands(char *data_received);
 void exec_list(int *pid);
 void run_list_pipe(int pip[]);
+void run_dl_pipe(int pip[]);
+void run_dsp_pipe(int pip[]);
+void run_chk_pipe(int pip[]);
 void error(char *s);
 
 int main(void)
@@ -138,7 +141,7 @@ int main(void)
          
          /* Variables for Pipes */
          int waiting = 1;
-         int numbytes;
+         int numbytes, nbytes;
          char ch_buf[MAXBUFFERSIZE];
 
          while(waiting){
@@ -154,72 +157,68 @@ int main(void)
               printf("Data received: '%s'\n", buf);
               
               if(strcmp(buf, list_command) == 0){
-                  
                   int pid, status;
                   int pipe[2];
-                  
                   switch(pid = fork()){   
                   case 0:
-                     printf("Attempting to run pipe..\n");
                      run_list_pipe(pipe);
                      exit(0);
                   default:
                      while((pid = wait(&status)) != -1)
-                           printf("Some output here...\n");
+                        fprintf(stderr, "process %d exists with %d\n", pid,
+                           WEXITSTATUS(status));
                      break;
                   case -1:
                      perror("fork");
                      exit(1);
                   }
-               
-                                 
-
+                  nbytes =  read(pipe[0], ch_buf, MAXBUFFERSIZE);
+                  ch_buf[nbytes] = 0;
+                  if(send(new_fd, ch_buf[nbytes], nbytes, 0) == ERROR){
+                     perror("send");
+                  }
+                  //printf("%s \n", ch_buf);
+                  exit(0);
                   
-
-                 /*
-                  if(pid == 0){
-                     close(pipe[0]); //only needs to write
-                     execl("/bin/ls","ls,", "-l", (char *)NULL);
-                     error("List could not be performed!");
-                  } else {
-                     close(pipe[1]); 
-                     num = (pipe[0], ch_buf, MAXDATASIZE);
-                     ch_buf[num] = 0;
-                     printf("Data from Child: %s \n", ch_buf);
-
-                     if(send(new_fd, ch_buf, 100, FLAGS) == ERROR){
-                        perror("send");
-                     }
-                 }*/
                }
+           }
+         }
          
          }
-            printf("Transaction Complete..closing socket..\n");
+            if(send(new_fd, "Acknowledged.", 13, 0)){
+               perror("send");
+               printf("Error occured while sending data.");
+            }
+            printf("Transaction Complete.\n");
             close(new_fd);
 			   exit(0);
          }
+      } else {
+		   close(new_fd);  // parent doesn't need this
       }
-		close(new_fd);  // parent doesn't need this
 	}
 
 	return 0;
 }
 
-char *listcmd[] = {"/bin/ls", "-l", 0};
+//char *listcmd[] = {"/bin/ls", "ls", "-l"};
+char *chkcmd[] = {};
+char *dspcmd[] = {};
+char *dlcmd[] = {};
 
 void run_list_pipe(int pip[])
 {  
-   printf("Running pipe...\n");
    int pid;
    switch(pid = fork()){
    case 0: // Child
       dup2(pip[0], 0);
       close(pip[1]); // Closes end of pipe
-      execvp(listcmd[0], listcmd);
-      perror(listcmd[0]);
+     // execvp(listcmd[0], listcmd);
+      execl ("/bin/ls", "ls", "-l", (char *)NULL);
+      //perror(listcmd[0]);
    default: // Parent
       dup2(pip[1], 1);
-      close(pip[0]);
+      close(pip[0]); // Close end of Pipe
    case -1:
       perror("fork");
       exit(1);
@@ -227,6 +226,61 @@ void run_list_pipe(int pip[])
 }
 
 
+void run_dsp_pipe(int pip[])
+{  
+   int pid;
+   switch(pid = fork()){
+   case 0: // Child
+      dup2(pip[0], 0);
+      close(pip[1]); // Closes end of pipe
+      execvp(dspcmd[0], dspcmd);
+      perror(dspcmd[0]);
+   default: // Parent
+      dup2(pip[1], 1);
+      close(pip[0]); // Close end of Pipe
+   case -1:
+      perror("fork");
+      exit(1);
+   }
+}
+
+
+void run_chk_pipe(int pip[])
+{  
+   int pid;
+   switch(pid = fork()){
+   case 0: // Child
+      dup2(pip[0], 0);
+      close(pip[1]); // Closes end of pipe
+      execvp(chkcmd[0], chkcmd);
+      perror(chkcmd[0]);
+   default: // Parent
+      dup2(pip[1], 1);
+      close(pip[0]); // Close end of Pipe
+   case -1:
+      perror("fork");
+      exit(1);
+   }
+}
+
+
+void run_dl_pipe(int pip[])
+{  
+   int pid;
+   switch(pid = fork()){
+   case 0: // Child
+      dup2(pip[0], 0);
+      close(pip[1]); // Closes end of pipe
+      execvp(dlcmd[0], dlcmd);
+      perror(dlcmd[0]);
+   default: // Parent
+      dup2(pip[1], 1);
+      close(pip[0]); // Close end of Pipe
+   case -1:
+      perror("fork");
+      exit(1);
+   }
+}
 
 void exec_commands(char *data_received)
 {
