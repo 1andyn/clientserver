@@ -138,7 +138,6 @@ int main(void)
 			if (send(new_fd, "Connection established!", 23, 0) == -1){
 				perror("send");
          }
-         
          /* Variables for Pipes */
          int waiting = 1;
          int numbytes, nbytes;
@@ -155,10 +154,11 @@ int main(void)
            } else {
               buf[numbytes] = '\0';
               printf("Data received: '%s'\n", buf);
+
+               int pid, status;
+               int pipe[2];
               
               if(strcmp(buf, list_command) == 0){
-                  int pid, status;
-                  int pipe[2];
                   switch(pid = fork()){   
                   case 0:
                      run_list_pipe(pipe);
@@ -167,24 +167,26 @@ int main(void)
                      while((pid = wait(&status)) != -1)
                         fprintf(stderr, "process %d exists with %d\n", pid,
                            WEXITSTATUS(status));
+                     if(send(new_fd, "Acknowledged.", 13, 0) == ERROR){
+                           perror("send");
+                     }
                      break;
                   case -1:
                      perror("fork");
                      exit(1);
                   }
+                  
                   nbytes =  read(pipe[0], ch_buf, MAXBUFFERSIZE);
                   ch_buf[nbytes] = 0;
                   if(send(new_fd, ch_buf[nbytes], nbytes, 0) == ERROR){
                      perror("send");
                   }
-                  //printf("%s \n", ch_buf);
                   exit(0);
                   
                }
            }
          }
-         
-         }
+            
             if(send(new_fd, "Acknowledged.", 13, 0)){
                perror("send");
                printf("Error occured while sending data.");
@@ -192,7 +194,7 @@ int main(void)
             printf("Transaction Complete.\n");
             close(new_fd);
 			   exit(0);
-         }
+      
       } else {
 		   close(new_fd);  // parent doesn't need this
       }
