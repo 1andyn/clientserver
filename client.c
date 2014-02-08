@@ -15,7 +15,7 @@
 
 #define PORT "3611" // the port client will be connecting to 
 
-#define MAXDATASIZE 100 // max number of bytes we can get at once 
+#define MAXDATASIZE 256 // max number of bytes we can get at once 
 
 const int ERROR = -1;
 const int FLAGS = 0;
@@ -123,16 +123,16 @@ int main(int argc, char *argv[])
          int list_not_rec = 1;
          int databytes;
          while(list_not_rec){
-            databytes = recv(sockfd, buf, MAXDATASIZE-1, 0);
+            databytes = recv(sockfd, buf, MAXDATASIZE, 0);
             if(databytes == ERROR){
                perror("recv");
                list_not_rec = 0;
             } else if (databytes == 0){
-               printf("Connection lost\n");
+               printf("Transaction Complete\n");
                list_not_rec = 0;
             } else {
                buf[databytes] = '\0';
-               printf("%s \n", buf);
+               printf("%s", buf);
                list_not_rec = 1;
             }
          }
