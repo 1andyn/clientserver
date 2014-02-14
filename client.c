@@ -27,6 +27,7 @@ char dl_command[] = "download";
 char dsp_command[] = "display";
 char chk_command[] = "check";
 char help_command[] = "help";
+char ack_response[] = "ack";
 
 #define DSP_CASE  0
 #define DL_CASE  1
@@ -205,11 +206,34 @@ void exec_file(int socket, int casenum, char *filename)
          printf("Something went wrong..\n");
          return;
    }
-   strcat(data, " ");
-   strcat(data, filename);
    int length = strlen(data);
    if(send(socket, data, length, FLAGS) == ERROR){
        perror("send");
        printf("Error occured, or connection lost\n");
+   }
+   
+   char buffer[MAXDATASIZE];
+   int wait_ack = 1;
+   int databytes;
+   while(wait_ack){
+      databytes = recv(socket, buffer, MAXDATASIZE, 0);
+      if (databytes == ERROR){
+         perror("recv");
+         wait_ack = 0;
+         return;
+      } else if (databytes == 0) {
+         printf("Command acknowledged, sending filename.\n");
+         wait_ack = 0;
+      } else {
+         buffer[databytes] = '\0';
+         printf("Server response: ", buffer);
+         wait_ack = 0;
+      }
+   }
+   
+   length = strlen(filename);
+   if(send(socket, filename, length, FLAGS) == ERROR){
+      perror("send");
+      printf("Error occured, or connection lost\n");
    }
 }

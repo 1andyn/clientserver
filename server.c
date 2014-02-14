@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <string.h>
 
 #define PORT "3611"  // the port users will be connecting to
 #define MAXDATASIZE 100
@@ -21,6 +22,8 @@
 #define MAXLINESIZE 256
 #define STDEER_FILENO 2
 #define STDOUT_FILENO 1
+#define CMD_MAX 20
+#define FILE_NAME_MAX 50
 
 const int ERROR = -1;
 const int FLAGS = 0;
@@ -29,7 +32,7 @@ char list_command[] = "list";
 char dl_command[] = "download";
 char dsp_command[] = "display";
 char chk_command[] = "check";
-char help_command[] = "help";
+char ack_response[] = "ack";
 
 void sigchld_handler(int s)
 {
@@ -176,8 +179,7 @@ int main(void)
                   close(pipefd[1]);
                   output = fdopen(pipefd[0], "r");
 
-                  while(fgets(line, sizeof(line), output))
-                  {
+                  while(fgets(line, sizeof(line), output)) {
                      if(send(new_fd, line, sizeof(line), 0) == -1){
                         perror("send");
                      }
@@ -186,7 +188,53 @@ int main(void)
                   waitpid(pid, &status, 0);
                   printf("Transcation Complete \n"); 
                   exit(0);
+
+             } else {
+               
+               char file_name[FILE_NAME_MAX];
+               int command = 0;
+
+               if(strcmp(buf, dsp_command) == 0){
+                  command = 1;
+                  printf("Display command inputted \n"); 
+               } else if (strcmp(buf, dl_command) == 0) {
+                  command = 2;
+                  printf("Download command inputted \n");
+               } else if (strcmp(buf, chk_command) == 0) {
+                  command = 3;
+                  printf("Check command inputted \n");
                }
+                  
+               /* Send Acknowledge meant and request filename*/
+               if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
+                  perror("send");
+               }
+
+               char buffer[MAXDATASIZE];
+               int wait_file = 1;
+               int databytes;
+               while(wait_file){
+                  databytes = recv(new_fd, buffer, MAXDATASIZE, 0);
+                  if(databytes == ERROR){
+                     perror("recv");
+                     wait_file = 0;
+                     return;
+                  } else if (databytes == 0){
+                     printf("File name received.\n");
+                     wait_file = 0;
+                  } else {
+                     buffer[databytes] = '\0';
+                     strcpy(file_name, buffer);
+                     printf("File name is: %s, \n", file_name);
+                     wait_file = 0;
+                  }
+               
+               }
+
+             }
+       
+       
+       
         }
       }
          printf("Closing connection.\n");
