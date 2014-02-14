@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <string.h>
 
-#define PORT "3511"  // the port users will be connecting to
+#define PORT "3611"  // the port users will be connecting to
 #define MAXDATASIZE 100
 #define BACKLOG 10	 // how many pending connections queue will hold
 #define MAXLINESIZE 256
@@ -33,6 +33,8 @@ char dl_command[] = "download";
 char dsp_command[] = "display";
 char chk_command[] = "check";
 char ack_response[] = "ack";
+char nf_response[] = "nf";
+char fo_response[] = "ff";
 
 void sigchld_handler(int s)
 {
@@ -264,23 +266,45 @@ int main(void)
                   break;
                 }
                case 2:{
-                  FILE *fp = fopen(file_name, "r");
-                  char line[MAXLINESIZE];     
+                  FILE *fp = fopen(file_name, "rb");
+                  char line[1025];     
                   
                   if(fp == NULL){
-                     char statement[MAXDATASIZE] = "File ";
-                     char miss_file[] = " is not found";
-                     strcat(statement, file_name);
-                     strcat(statement, miss_file);
-                     
-                     if(send(new_fd, statement, sizeof(statement), 0) 
+                     if(send(new_fd, nf_response, sizeof(nf_response), 0) 
                         == -1){
                         perror("send");
                      }
                   } else {
-                  
+
+                     if(send(new_fd, fo_response, sizeof(fo_response), 0) 
+                        == -1){
+                        perror("send");
+                     }
+
+                      while(!feof(fp)){
+                         int rval = fread(line, 1, sizeof(line), fp);
+                         if(rval < 1){
+                           printf("Can't read from file\n");
+                           fclose(fp);
+                           return;
+                         }
+
+                        int off = 0;
+                        do{
+                           int sent = send(new_fd, &line[off], rval - off, 0);
+                           
+                           if(sent < 1){
+                              printf("Can't write to socket\n");
+                              fclose(fp);
+                              return;
+                           }
+                           
+                           off += sent;
+                        } while(off < rval);
+                        printf("Rval: %i \n", rval);
+                      }
+                     fclose(fp);
                   }
-                  
                   break;
                }
                case 3:

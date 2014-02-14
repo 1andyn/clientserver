@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define PORT "3511" // the port client will be connecting to 
+#define PORT "3611" // the port client will be connecting to 
 
 #define MAXDATASIZE 256 // max number of bytes we can get at once 
 
@@ -28,11 +28,14 @@ char dsp_command[] = "display";
 char chk_command[] = "check";
 char help_command[] = "help";
 char ack_response[] = "ack";
+char nf_response[] = "nf";
+char fo_response[] = "ff";
 
 #define DSP_CASE  0
 #define DL_CASE  1
 #define CHK_CASE  2
 
+void receivefile(int sock, char * filename);
 void print_commands();
 void exec_list(int socket);
 void exec_file(int socket, int case_num, char *filename);
@@ -237,8 +240,40 @@ void exec_file(int socket, int casenum, char *filename)
    }
    
    wait_ack = 1;
+
+   if(casenum == 1){
+      receivefile(socket, filename);
+   } else {
+      while(wait_ack){
+         databytes = recv(socket, buffer, MAXDATASIZE, 0);
+         if(databytes == ERROR){
+            perror("recv");
+            wait_ack = 0;
+         } else if (databytes == 0) {
+            wait_ack = 0;
+         } else {
+            buffer[databytes] = '\0';
+            if(strcmp(buffer, ack_response) == 0){
+               wait_ack = 0;
+               break;
+            } else {
+               wait_ack = 1;
+            }
+            printf("%s", buffer);
+         }
+      }
+   }
+
+}
+
+void receivefile(int sock, char *filename)
+{
+   int rval;
+   char buffer[MAXDATASIZE];
+   int wait_ack = 1;
+   int databytes;
    while(wait_ack){
-      databytes = recv(socket, buffer, MAXDATASIZE, 0);
+      databytes = recv(sock, buffer, MAXDATASIZE, 0);
       if(databytes == ERROR){
          perror("recv");
          wait_ack = 0;
@@ -246,14 +281,47 @@ void exec_file(int socket, int casenum, char *filename)
          wait_ack = 0;
       } else {
          buffer[databytes] = '\0';
-         if(strcmp(buffer, ack_response) == 0){
+         if(strcmp(buffer, nf_response) == 0){
+            printf("File %s is not found\n", filename);
+            wait_ack = 0;
+            return;
+         } else if (strcmp(buffer, fo_response) == 0){
+            printf("file %s exists, download..\n", filename);
             wait_ack = 0;
             break;
-         } else {
-            wait_ack = 1;
          }
-         printf("%s", buffer);
+         wait_ack = 1;
       }
    }
+
+   char buf[0x1000];
+   FILE *file = fopen(filename, "wb");
+   if(!file){
+      printf("Can't open file for writing\n");
+      return;
+   }
+
+   do {
+      rval = recv(sock, buf, sizeof(buf),0);
+      if(rval < 0){
+         printf("Can't read from socket\n");
+         fclose(file);
+         return;
+      }
+      if(rval == 0) break;
+
+      int off = 0;
+      do{
+         int written = fwrite(&buf[off], 1, rval - off, file);
+         if(written < 1){
+            printf("Can't write to file\n");
+            fclose(file);
+            return;
+         }
+         off += written;
+      } while(off < rval);
+      printf("rval: %i \n", rval);
+   } while(rval != -1 && rval != 0);
+   printf("File successfully saved.\n");
 
 }
