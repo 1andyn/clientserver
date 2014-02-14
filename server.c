@@ -228,13 +228,49 @@ int main(void)
                      printf("File name is: %s, \n", file_name);
                      wait_file = 0;
                   }
-               
                }
+               
+               switch(command){
+               case 1:
+                  
+                  break;
+               case 2:
+                  break;
+               case 3:
+               {
+                  FILE *fp = fopen(file_name, "r");
+                  if(fp == NULL){
+                     char statement[MAXDATASIZE] = "File ";
+                     char miss_file[] = " is not found";
+                     strcat(statement, file_name);
+                     strcat(statement, miss_file);
+                     
+                     if(send(new_fd, statement, sizeof(statement), 0) 
+                        == -1){
+                        perror("send");
+                     }
+                  } else {
 
-             }
-       
-       
-       
+                     char statement[MAXDATASIZE] = "File ";
+                     char exis_file[] = " exists";
+                     strcat(statement, file_name);
+                     strcat(statement, exis_file);
+                     
+                     if(send(new_fd, statement, sizeof(statement), 0) 
+                        == -1){
+                        perror("send");
+                     }
+                  }
+
+                  fclose(fp);
+                  exit(0);
+                  break;
+               }
+               default:
+                  printf("Unrecognized command received\n");
+                  break;
+               }
+         } 
         }
       }
          printf("Closing connection.\n");

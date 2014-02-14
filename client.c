@@ -129,7 +129,6 @@ int main(int argc, char *argv[])
                perror("recv");
                list_not_rec = 0;
             } else if (databytes == 0){
-               printf("Transaction Complete\n");
                list_not_rec = 0;
             } else {
                buf[databytes] = '\0';
@@ -144,23 +143,17 @@ int main(int argc, char *argv[])
           not_quit = 0;
           printf("Exiting client...\n");
       } else if(strcmp(chk_command,command) == 0) {
-         printf("Enter file name: \n");
          scanf("%s", &sec_command);
          while(getchar() != '\n');
          exec_file(sockfd, CHK_CASE, sec_command);
-         printf("File name entered is '%s' \n", &sec_command);
       } else if(strcmp(dsp_command, command) == 0) {
-         printf("Enter file name: \n");
          scanf("%s", &sec_command);
          while(getchar() != '\n');
          exec_file(sockfd, DSP_CASE, sec_command);
-         printf("File name entered is '%s' \n", &sec_command);
       } else if(strcmp(dl_command, command) == 0){
-         printf("Enter file name: \n");
          scanf("%s", &sec_command);
          while(getchar() != '\n');
          exec_file(sockfd, DL_CASE, sec_command);
-         printf("File name entered is '%s' \n", &sec_command);
       } else {
          printf("Invalid command or missing parameters in command!\n");
          while(getchar() != '\n');
@@ -236,4 +229,20 @@ void exec_file(int socket, int casenum, char *filename)
       perror("send");
       printf("Error occured, or connection lost\n");
    }
+   
+   wait_ack = 1;
+   while(wait_ack){
+      databytes = recv(socket, buffer, MAXDATASIZE, 0);
+      if(databytes == ERROR){
+         perror("recv");
+         wait_ack = 0;
+      } else if (databytes == 0) {
+         wait_ack = 0;
+      } else {
+         buffer[databytes] = '\0';
+         printf("%s \n", buffer);
+         wait_ack = 1;
+      }
+   }
+
 }
