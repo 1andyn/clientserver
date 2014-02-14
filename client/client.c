@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define PORT "3611" // the port client will be connecting to 
+#define PORT "3511" // the port client will be connecting to 
 
 #define MAXDATASIZE 256 // max number of bytes we can get at once 
 
@@ -46,8 +46,6 @@ void *get_in_addr(struct sockaddr *sa)
 
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
-
-
 
 int main(int argc, char *argv[])
 {
@@ -132,6 +130,10 @@ int main(int argc, char *argv[])
                list_not_rec = 0;
             } else {
                buf[databytes] = '\0';
+               if(strcmp(buf, ack_response) == 0){
+                  list_not_rec = 0;
+                  break;
+               }
                printf("%s", buf);
                list_not_rec = 1;
             }
@@ -158,6 +160,7 @@ int main(int argc, char *argv[])
          printf("Invalid command or missing parameters in command!\n");
          while(getchar() != '\n');
       }
+      printf("\n");
    }
 	close(sockfd);
 
@@ -215,14 +218,14 @@ void exec_file(int socket, int casenum, char *filename)
          wait_ack = 0;
          return;
       } else if (databytes == 0) {
-         printf("Command acknowledged, sending filename.\n");
+         printf("Server no response\n");
          wait_ack = 0;
       } else {
          buffer[databytes] = '\0';
          if(strcmp(buffer, ack_response) == 0){
             wait_ack = 0;
          } else {
-            wait_ack = 0;
+            wait_ack = 1;
          }
       }
    }
@@ -243,8 +246,13 @@ void exec_file(int socket, int casenum, char *filename)
          wait_ack = 0;
       } else {
          buffer[databytes] = '\0';
+         if(strcmp(buffer, ack_response) == 0){
+            wait_ack = 0;
+            break;
+         } else {
+            wait_ack = 1;
+         }
          printf("%s", buffer);
-         wait_ack = 1;
       }
    }
 

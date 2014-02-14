@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <string.h>
 
-#define PORT "3611"  // the port users will be connecting to
+#define PORT "3511"  // the port users will be connecting to
 #define MAXDATASIZE 100
 #define BACKLOG 10	 // how many pending connections queue will hold
 #define MAXLINESIZE 256
@@ -185,9 +185,12 @@ int main(void)
                      }
                   }
 
+                  if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
+                     perror("send");
+                  }
+
                   waitpid(pid, &status, 0);
                   printf("Transcation Complete \n"); 
-                  exit(0);
 
              } else {
                
@@ -253,15 +256,17 @@ int main(void)
                      }
                   }
 
+                  if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
+                     perror("send");
+                  }
+                  
                   fclose(fp);
-                  exit(0);
                   break;
                 }
-               case 2:
-                  break;
-               case 3:
-               {
+               case 2:{
                   FILE *fp = fopen(file_name, "r");
+                  char line[MAXLINESIZE];     
+                  
                   if(fp == NULL){
                      char statement[MAXDATASIZE] = "File ";
                      char miss_file[] = " is not found";
@@ -273,24 +278,40 @@ int main(void)
                         perror("send");
                      }
                   } else {
-
-                     char statement[MAXDATASIZE] = "File ";
+                  
+                  }
+                  
+                  break;
+               }
+               case 3:
+               {
+                  FILE *fp = fopen(file_name, "r");
+                  char statement[MAXDATASIZE] = "File ";
+                  
+                  if(fp == NULL){
+                     char miss_file[] = " is not found";
+                     strcat(statement, file_name);
+                     strcat(statement, miss_file);
+                  } else {
                      char exis_file[] = " exists";
                      strcat(statement, file_name);
                      strcat(statement, exis_file);
-                     
-                     if(send(new_fd, statement, sizeof(statement), 0) 
-                        == -1){
-                        perror("send");
-                     }
+                  }
+                  
+                  if(send(new_fd, statement, sizeof(statement), 0) 
+                     == -1){
+                     perror("send");
+                  }
+                  
+                  if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
+                     perror("send");
                   }
 
                   fclose(fp);
-                  exit(0);
                   break;
                }
                default:
-                  printf("Unrecognized command received\n");
+                  printf("Unrecognized command received");
                   break;
                }
          } 
