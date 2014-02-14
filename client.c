@@ -219,11 +219,14 @@ void exec_file(int socket, int casenum, char *filename)
          wait_ack = 0;
       } else {
          buffer[databytes] = '\0';
-         printf("Server response: ", buffer);
-         wait_ack = 0;
+         if(strcmp(buffer, ack_response) == 0){
+            wait_ack = 0;
+         } else {
+            wait_ack = 0;
+         }
       }
    }
-   
+  
    length = strlen(filename);
    if(send(socket, filename, length, FLAGS) == ERROR){
       perror("send");
@@ -240,7 +243,7 @@ void exec_file(int socket, int casenum, char *filename)
          wait_ack = 0;
       } else {
          buffer[databytes] = '\0';
-         printf("%s \n", buffer);
+         printf("%s", buffer);
          wait_ack = 1;
       }
    }

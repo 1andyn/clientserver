@@ -225,15 +225,38 @@ int main(void)
                   } else {
                      buffer[databytes] = '\0';
                      strcpy(file_name, buffer);
-                     printf("File name is: %s, \n", file_name);
+                     printf("File name is: %s \n", file_name);
                      wait_file = 0;
                   }
                }
                
                switch(command){
-               case 1:
+               case 1: {
+                  FILE *fp = fopen(file_name, "r");
+                  char line[MAXLINESIZE];     
                   
+                  if(fp == NULL){
+                     char statement[MAXDATASIZE] = "File ";
+                     char miss_file[] = " is not found";
+                     strcat(statement, file_name);
+                     strcat(statement, miss_file);
+                     
+                     if(send(new_fd, statement, sizeof(statement), 0) 
+                        == -1){
+                        perror("send");
+                     }
+                  } else {
+                     while(fgets(line, sizeof(line), fp)) {
+                        if(send(new_fd, line, sizeof(line), 0) == -1){
+                           perror("send");
+                        }
+                     }
+                  }
+
+                  fclose(fp);
+                  exit(0);
                   break;
+                }
                case 2:
                   break;
                case 3:
