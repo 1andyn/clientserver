@@ -285,23 +285,6 @@ int main(void)
 	return 0;
 }
 
-char *listcmd[] = {"/bin/ls", "-l", 0};
-char *chkcmd[] = {};
-char *dspcmd[] = {};
-char *dlcmd[] = {};
-
-void exec_commands(char *data_received)
-{
-   if(strcmp(data_received, list_command) == 0){
-    
-   }
-}
-
-void exec_list(int *pid)
-{
-
-}
-
 void error(char *s)
 {
    perror(s);
