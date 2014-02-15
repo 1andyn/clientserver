@@ -316,11 +316,10 @@ void receivefile(int sock, char *filename)
          if(written < 1){
             printf("Can't write to file\n");
             fclose(file);
-            return;
+            break;
          }
          off += written;
       } while(off < rval);
-      printf("rval: %i \n", rval);
    } while(rval != -1 && rval != 0);
    printf("File successfully saved.\n");
 

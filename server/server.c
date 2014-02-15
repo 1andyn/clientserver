@@ -237,6 +237,7 @@ int main(void)
                
                switch(command){
                case 1: {
+                  /* Display Command */
                   FILE *fp = fopen(file_name, "r");
                   char line[MAXLINESIZE];     
                   
@@ -266,6 +267,7 @@ int main(void)
                   break;
                 }
                case 2:{
+                  /* Download  Command */
                   FILE *fp = fopen(file_name, "rb");
                   char line[1025];     
                   
@@ -286,22 +288,21 @@ int main(void)
                          if(rval < 1){
                            printf("Can't read from file\n");
                            fclose(fp);
-                           return;
+                           break;
                          }
 
                         int off = 0;
                         do{
                            int sent = send(new_fd, &line[off], rval - off, 0);
-                           
+                          printf("inside dowhile\n"); 
                            if(sent < 1){
                               printf("Can't write to socket\n");
                               fclose(fp);
-                              return;
+                              break;
                            }
                            
                            off += sent;
                         } while(off < rval);
-                        printf("Rval: %i \n", rval);
                       }
                      fclose(fp);
                   }
@@ -309,6 +310,7 @@ int main(void)
                }
                case 3:
                {
+                  /* Check file command*/
                   FILE *fp = fopen(file_name, "r");
                   char statement[MAXDATASIZE] = "File ";
                   
