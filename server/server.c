@@ -272,9 +272,6 @@ int main(void)
                case 2:{
                   /* Download  Command */
                   sendfile(new_fd, file_name); 
-                  if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
-                     perror("send");
-                  }
                   printf("<Download> Transcation complete.\n");
                   break;
                }

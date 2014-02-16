@@ -16,6 +16,7 @@
 #define PORT "3611" // the port client will be connecting to 
 
 #define MAXDATASIZE 256 // max number of bytes we can get at once 
+#define MAXBUFF 4096
 
 const int ERROR = -1;
 const int FLAGS = 0;
@@ -286,7 +287,7 @@ void receivefile(int sock, char *filename)
             wait_ack = 0;
             return;
          } else if (strcmp(buffer, fo_response) == 0){
-            printf("File '%s' exists, downloading..\n", filename);
+            printf("File '%s' exists on server, downloading..\n", filename);
             wait_ack = 0;
             break;
          }
@@ -294,75 +295,35 @@ void receivefile(int sock, char *filename)
       }
    }
 
-   char buf[0x1000];
-   char temp[0x1000];
+   int bytes = 0; /* Bytes received from socket */
+   char buf[MAXBUFF];
    FILE *file = fopen(filename, "wb");
    if(!file){
       printf("Can't open file for writing\n");
       return;
    }
-/*
-   int run = 1;
-   while(run){
-     int bytes = recv(sock, buf, sizeof(buf), 0);
-     if(bytes == 0){
-         run = 0;
-         printf("Download of '%s' complete.\n", filename);
-         break;
-     } else if (bytes < 0){
-         printf("[ERROR] Connection terminated unexpectedly!\n");
+
+   while((bytes = recv(sock, buf, sizeof(buf),0)) > 0){
+      int w_bytes = fwrite(buf, sizeof(char), bytes, file); 
+      if(w_bytes < bytes){
+         printf("Failed to write.\n");
          fclose(file);
+      }
+      bzero(buf, MAXBUFF);
+      if(bytes == 0 || bytes != MAXBUFF){
          break;
-     }
+      }
 
-    strcpy(temp,buf);
-    temp[bytes] = '\0';
-    if(strcmp(temp, ack_response == 0)){
-      printf("Download of '%s' complete.\n", filename);
+   }
+    
+   if(bytes < 0){
+      printf("Can't read from socket\n");
       fclose(file);
-      break;
-    }
-
-
-    void *p = buffer;
-    while(bytes > 0) {
-      int bytes = write(
-    }
-      
-       
    }
 
-
-
-
-
-
-*/
-
-
-
-   do {
-      rval = recv(sock, buf, sizeof(buf),0);
-      strcpy(temp, buf);
-      temp[rval] = '\0'; //Set last char to \0
-
-      if(rval < 0){
-         printf("Can't read from socket\n");
-         fclose(file);
-         return;
-      }
-      if(rval == 0) break;
-      int off = 0;
-      do{
-         int written = fwrite(&buf[off], 1, rval - off, file);
-         if(written < 1){
-            printf("Can't write to file\n");
-            fclose(file);
-            return;
-         }
-         off += written;
-      } while(off < rval);
-   } while(strcmp(temp, ack_response)== -1);
+   if(file != NULL){
+      fclose(file);
+   }
 
    printf("Download of '%s' complete.\n", filename);
 
