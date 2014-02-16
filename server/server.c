@@ -41,6 +41,8 @@ void sigchld_handler(int s)
 	while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
+void sendfile(int sock, char *filename);
+
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -192,7 +194,7 @@ int main(void)
                   }
 
                   waitpid(pid, &status, 0);
-                  printf("Transcation Complete \n"); 
+                  printf("<List> Transcation Complete. \n"); 
 
              } else {
                
@@ -201,13 +203,13 @@ int main(void)
 
                if(strcmp(buf, dsp_command) == 0){
                   command = 1;
-                  printf("Display command inputted \n"); 
+                  printf("<Display> command received. \n"); 
                } else if (strcmp(buf, dl_command) == 0) {
                   command = 2;
-                  printf("Download command inputted \n");
+                  printf("<Download> command received. \n");
                } else if (strcmp(buf, chk_command) == 0) {
                   command = 3;
-                  printf("Check command inputted \n");
+                  printf("<Check> command received. \n");
                }
                   
                /* Send Acknowledge meant and request filename*/
@@ -257,55 +259,23 @@ int main(void)
                            perror("send");
                         }
                      }
+                     fclose(fp);
                   }
 
                   if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
                      perror("send");
                   }
                   
-                  fclose(fp);
+                  printf("<Display> Transcation complete.\n");
                   break;
                 }
                case 2:{
                   /* Download  Command */
-                  FILE *fp = fopen(file_name, "rb");
-                  char line[1025];     
-                  
-                  if(fp == NULL){
-                     if(send(new_fd, nf_response, sizeof(nf_response), 0) 
-                        == -1){
-                        perror("send");
-                     }
-                  } else {
-
-                     if(send(new_fd, fo_response, sizeof(fo_response), 0) 
-                        == -1){
-                        perror("send");
-                     }
-
-                      while(!feof(fp)){
-                         int rval = fread(line, 1, sizeof(line), fp);
-                         if(rval < 1){
-                           printf("Can't read from file\n");
-                           fclose(fp);
-                           break;
-                         }
-
-                        int off = 0;
-                        do{
-                           int sent = send(new_fd, &line[off], rval - off, 0);
-                          printf("inside dowhile\n"); 
-                           if(sent < 1){
-                              printf("Can't write to socket\n");
-                              fclose(fp);
-                              break;
-                           }
-                           
-                           off += sent;
-                        } while(off < rval);
-                      }
-                     fclose(fp);
+                  sendfile(new_fd, file_name); 
+                  if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
+                     perror("send");
                   }
+                  printf("<Download> Transcation complete.\n");
                   break;
                }
                case 3:
@@ -322,6 +292,7 @@ int main(void)
                      char exis_file[] = " exists";
                      strcat(statement, file_name);
                      strcat(statement, exis_file);
+                     fclose(fp);
                   }
                   
                   if(send(new_fd, statement, sizeof(statement), 0) 
@@ -332,12 +303,12 @@ int main(void)
                   if(send(new_fd, ack_response, sizeof(ack_response), 0) == -1){
                      perror("send");
                   }
-
-                  fclose(fp);
+                  
+                  printf("<Check> Transcation complete.\n");
                   break;
                }
                default:
-                  printf("Unrecognized command received");
+                  printf("[ERROR] Unrecognized command received.\n");
                   break;
                }
          } 
@@ -360,3 +331,44 @@ void error(char *s)
    perror(s);
    exit(1);
 }
+
+void sendfile(int sock, char *filename)
+{
+   FILE *fp = fopen(filename, "rb");
+   char line[1025];     
+   
+   if(fp == NULL){
+      if(send(sock, nf_response, sizeof(nf_response), 0) 
+         == -1){
+         perror("send");
+      }
+   } else {
+
+      if(send(sock, fo_response, sizeof(fo_response), 0) 
+         == -1){
+         perror("send");
+      }
+
+       while(!feof(fp)){
+          int rval = fread(line, 1, sizeof(line), fp);
+          if(rval < 1){
+            printf("Can't read from file\n");
+            fclose(fp);
+            return;
+          }
+         int off = 0;
+         
+         do{
+            int sent = send(sock, &line[off], rval - off, 0);
+            if(sent < 1){
+               printf("Can't write to socket\n");
+               fclose(fp);
+               return;
+            }
+            off += sent;
+         } while(off < rval);
+       }
+      fclose(fp);
+   }
+}
+
