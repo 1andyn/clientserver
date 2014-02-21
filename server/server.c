@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <string.h>
 
-#define PORT "3611"  // the port users will be connecting to
+#define PORT "3511"  // the port users will be connecting to
 #define MAXDATASIZE 100
 #define BACKLOG 10	 // how many pending connections queue will hold
 #define MAXLINESIZE 256

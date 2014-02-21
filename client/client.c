@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define PORT "3611" // the port client will be connecting to 
+#define PORT "3511" // the port client will be connecting to 
 
 #define MAXDATASIZE 256 // max number of bytes we can get at once 
 #define MAXBUFF 4096
@@ -295,14 +295,38 @@ void receivefile(int sock, char *filename)
       }
    }
 
+   FILE *file = fopen(filename, "r");
+
+   if(file != NULL){
+      printf("File already exists. Replace? (y/n): ");
+      int replacement = 1;
+      char input[] = "";
+      while(replacement){
+         scanf("%s", &input);
+         if((strcmp(input, "N")== 0) || (strcmp(input, "n") == 0)){
+            printf("Not replacing file..\n");
+            fclose(file);
+            return;
+         } else if ((strcmp(input, "Y") == 0) || (strcmp(input, "y") == 0)){
+            printf("Replacing prexisting file, '%s' \n", filename);
+            fclose(file);
+            replacement = 0;
+         } else {
+            printf("Invalid input entered.\n");
+            printf("File already exists. Replace? (y/n): ");
+         }
+      }
+   }
+
+
    int bytes = 0; /* Bytes received from socket */
    char buf[MAXBUFF];
-   FILE *file = fopen(filename, "wb");
+   file = fopen(filename, "wb");
    if(!file){
       printf("Can't open file for writing\n");
       return;
    }
-
+   
    while((bytes = recv(sock, buf, sizeof(buf),0)) > 0){
       int w_bytes = fwrite(buf, sizeof(char), bytes, file); 
       if(w_bytes < bytes){
