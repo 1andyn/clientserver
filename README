@@ -7,3 +7,5 @@ Andy Ng
 Tyler Isono
 
 There is a make file in each folder, simply using the command 'make server' and 'make client' in their corresponding folders should be able to compile the files. There should be client.c and server.c in their corresonding folders.
+
+Important Note: Git was used for project so the tar file includes the hidden git files. As a result when deleting this directory, the -rf flags for rm is needed
